@@ -1,4 +1,5 @@
 # cljs-http
+  [![Build Status](https://travis-ci.org/ducky427/cljs-neocons.png)](https://travis-ci.org/ducky427/cljs-neocons)
 
 A Clojure library designed to ... well, that part is up to you.
 
