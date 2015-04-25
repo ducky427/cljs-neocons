@@ -4,7 +4,8 @@
             [cljs.core.async :as async :refer [<! chan close! put! >!]]))
 
 
-(def headers {"content-type" "application/json; charset=UTF-8"})
+(def headers {"content-type" "application/json; charset=UTF-8"
+              "X-Stream" true})
 
 
 (defn post
