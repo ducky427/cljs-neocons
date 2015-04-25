@@ -1,2 +1,19 @@
 language: clojure
 lein: lein2
+
+jdk:
+    - oraclejdk7  # needed for local Neo4j 2.0+
+
+env:
+  # test across multiple versions of Neo4j:
+  - NEO4J_VERSION="2.2.1"
+  - NEO4J_VERSION="2.1.7"
+
+
+before_install:
+  # install Neo4j locally:
+  - wget dist.neo4j.org/neo4j-community-$NEO4J_VERSION-unix.tar.gz
+  - tar -xzf neo4j-community-$NEO4J_VERSION-unix.tar.gz
+  - sed -i.bak s/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g neo4j-community-2.2.0/conf/neo4j-server.properties
+
+  - neo4j-community-$NEO4J_VERSION/bin/neo4j start
