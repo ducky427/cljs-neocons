@@ -15,6 +15,5 @@
     (let [response (<! (hr/connect "http://localhost:7474/db/data/"))]
       (is (= 200 (:status response)))
       (is (= true (:success response)))
-      (prn (:transaction (:body response)))
-      (prn response)
+      (is (some? (get-in response [:body :neo4j_version])))
       (done))))

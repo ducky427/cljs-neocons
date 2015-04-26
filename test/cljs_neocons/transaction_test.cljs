@@ -7,7 +7,7 @@
             [cljs-neocons.transaction :as tx]))
 
 
-(deftest ^:async test-connect
+#_(deftest ^:async test-connect
   (go
     (let [conn    (<! (nr/connect "http://localhost:7474/db/data/"))
           resp    (<! (tx/in-transaction

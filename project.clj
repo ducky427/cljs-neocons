@@ -11,8 +11,15 @@
             [lein-cljsbuild "1.0.5"]
             [lein-ancient "0.6.7"]]
   :aliases {"test" ["do" "clean," "cljsbuild" "test"]}
-  :cljsbuild {:builds [{:compiler {:output-to "target/testable.js"
-                                   :optimizations :advanced
+  :cljsbuild {:builds [{:compiler {:output-to "target/browser-testable.js"
+                                   :optimizations :simple
+                                   :pretty-print true}
+                        :source-paths ["test"]}
+                       {:compiler {:output-to "target/node-testable.js"
+                                   :optimizations :simple
+                                   :target :nodejs
+                                   :hashbang false
                                    :pretty-print true}
                         :source-paths ["test"]}]
-              :test-commands {"phantom" ["phantomjs" :runner "target/testable.js"]}})
+              :test-commands {"nodejs" ["node" :node-runner "target/node-testable.js"]
+                              "phantom" ["phantomjs" :runner "target/browser-testable.js"]}})
