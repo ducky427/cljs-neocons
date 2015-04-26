@@ -18,30 +18,36 @@
 (def headers {"content-type" "application/json; charset=UTF-8"
               "X-Stream" true})
 
-(defn- check-json
-  [headers data]
-  (if (gstring/caseInsensitiveContains (aget headers "content-type") "application/json")
-    (js->clj (goog-json/parse data) :keywordize-keys true)
-    data))
+
+(defn- handle-response
+  [buf out response]
+  (.on response "data" #(.append buf %))
+  (.on response "end" (fn []
+                        (put! out {:status (aget response "statusCode")
+                                   :success true
+                                   :body (js->clj (goog-json/parse (.toString buf))
+                                                  :keywordize-keys true)}))))
+
+
+(defn- make-options
+  [uri]
+  (let [raw  (.parse url uri)]
+    {:hostname (aget raw "hostname")
+     :path     (aget raw "path")
+     :port     (aget raw "port")
+     :protocol (aget raw "protocol")
+     :headers  headers}))
 
 
 (if node?
   (defn- internal-get
     [uri]
     (let [out    (chan)
-          raw    (.parse url uri)
-          r      (StringBuffer.)]
-      (.get http (clj->js {:hostname (aget raw "hostname")
-                           :path (aget raw "path")
-                           :port (aget raw "port")
-                           :protocol (aget raw "protocol")
-                           :headers headers})
+          opts   (make-options uri)
+          buf    (StringBuffer.)]
+      (.get http (clj->js opts)
             (fn [res]
-              (.on res "data" #(.append r %))
-              (.on res "end" (fn [] (put! out {:status (aget res "statusCode")
-                                               :success true
-                                               :body (check-json (.-headers res)
-                                                                 (.toString r))})))))
+              (handle-response buf out res)))
       out))
 
   (defn- internal-get
@@ -54,21 +60,13 @@
   (defn- internal-post
     [uri params]
     (let [out    (chan)
-          raw    (.parse url uri)
-          r      (StringBuffer.)
-          req    (.request http (clj->js {:hostname (aget raw "hostname")
-                                          :path (aget raw "path")
-                                          :port (aget raw "port")
-                                          :protocol (aget raw "protocol")
-                                          :headers (assoc headers "Content-Type" "application/json")
-                                          :method "POST"})
+          opts   (-> (make-options uri)
+                     (assoc-in [:headers "Content-Type"] "application/json")
+                     (assoc :method "POST"))
+          buf    (StringBuffer.)
+          req    (.request http (clj->js opts)
                            (fn [res]
-                             (.on res "data" #(.append r %))
-                             (.on res "end" (fn []
-                                              (put! out {:status (aget res "statusCode")
-                                                         :success true
-                                                         :body (check-json (.-headers res)
-                                                                           (.toString r))})))))]
+                             (handle-response buf out res)))]
       (.write req (goog-json/serialize (clj->js params)))
       (.end req)
       out))
