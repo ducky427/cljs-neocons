@@ -26,8 +26,8 @@
 
 
 (if node?
-  (defn internal-get
-    [uri params]
+  (defn- internal-get
+    [uri]
     (let [out    (chan)
           raw    (.parse url uri)
           r      (StringBuffer.)]
@@ -44,16 +44,46 @@
                                                                  (.toString r))})))))
       out))
 
-  (defn internal-get
+  (defn- internal-get
+    [uri]
+    (client/get uri {:with-credentials? false
+                     :headers headers})))
+
+
+(if node?
+  (defn- internal-post
     [uri params]
-    (client/get uri params)))
+    (let [out    (chan)
+          raw    (.parse url uri)
+          r      (StringBuffer.)
+          req    (.request http (clj->js {:hostname (aget raw "hostname")
+                                          :path (aget raw "path")
+                                          :port (aget raw "port")
+                                          :protocol (aget raw "protocol")
+                                          :headers (assoc headers "Content-Type" "application/json")
+                                          :method "POST"})
+                           (fn [res]
+                             (.on res "data" #(.append r %))
+                             (.on res "end" (fn []
+                                              (put! out {:status (aget res "statusCode")
+                                                         :success true
+                                                         :body (check-json (.-headers res)
+                                                                           (.toString r))})))))]
+      (.write req (goog-json/serialize (clj->js params)))
+      (.end req)
+      out))
+
+
+  (defn- internal-post
+    [uri params]
+    (client/post uri {:with-credentials? false
+                      :header headers
+                      :json-params params})))
 
 
 (defn post
   [conn uri params]
-  (client/post uri {:with-credentials? false
-                    :header headers
-                    :json-params params}))
+  (internal-post uri params))
 
 
 
@@ -68,5 +98,4 @@
 
 (defn connect
   [uri]
-  (internal-get uri {:with-credentials? false
-                     :headers headers}))
+  (internal-get uri))
